@@ -42,7 +42,7 @@ function Bio() {
             />
             <p>
               Web Developer actualmente viviendo en Berlin y trabajando como
-              Backend Developer en @{companyName}
+              Fullstack Developer en @{companyName}
             </p>
           </div>
         )
