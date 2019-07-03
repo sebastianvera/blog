@@ -1,0 +1,143 @@
+---
+title: Manejando múltiples configuraciones de git
+date: "2019-03-19T20:56:00.000Z"
+description: "¿Cómo puedo manejar distintas configurationes de git dependiendo
+el directorio/proyecto en el que estoy trabajando?"
+tags: git, configurationes condicinoales, configuración, múltiples perfiles
+---
+
+En mi trabajo actual me encuentro realizando contribuciones a múltiples
+repositorios en distintas plataformas, tales como, gitlab, bitbucket y github.
+El problema es que, para cada una de las plataformas, debo ocupar distintos
+usuarios y configuraciones de git, por ejemplo, crear commits con distintos
+correos, utilizar o mi llave GPG, convertir caracteres de saltos de
+linea, etc.
+
+En este post vamos a revisar cómo ocupar [conditional includes] de git para cargar
+distintas configuraciones dependiendo el directorio donde estamos trabajando.
+
+A modo de ejemplo veremos cómo podemos hacer uso de distintas configuraciones
+cuando trabejemos en proyectos personales y proyectos de nuestro trabajo.
+
+## Estructura de carpetas
+
+Vamos a suponer que estructuramos nuestros proyectos de la siguiente forma:
+
+```
+.
+├── code
+│   ├── work
+│   │   ├── work-project-1
+│   │   ├── work-project-2
+│   ├── personal-project-1
+│   ├── personal-project-2
+│   ├── personal-project-3
+│   ├── open-source-project-1
+│   ├── open-source-project-2
+│   └── other-project
+└── downloads
+```
+
+Si configuramos globalmente nuestro correo personal con:
+
+```
+git config --global user.name "Sebastian Vera"
+git config --global user.email "personal@email.com"
+```
+
+Nuestro archivo `~/.gitconfig` tendrá el siguiente contenido:
+
+```
+[user]
+  name = Sebastian Vera
+  email = personal@email.com
+```
+
+Ahora cada vez que realicemos un commit, independientemente el proyecto o carpeta
+en donde estemos, se hará uso de nuestro reciente nombre y correo
+configurado. Si queremos ocupar nuestro correo del trabajo para cada sub-carpeta
+de `work` tenemos distintas opciones:
+
+```
+commit af7651e45f59247e1a91b19cc62aff5b56accca2
+Author: Sebastian Vera <personal@email.com>
+Date:   Tue Mar 19 14:23:01 2019 +0000
+
+    Initial commit
+```
+
+### Configuraciones locales
+
+Git nos permite tener configuraciones locales en cada carpeta, por ejemplo, si
+entramos entramos al directorio `~/code/work/work-project-2` y ejecutamos:
+
+```
+git config user.email "work@email.com"
+```
+
+Al grabar un commit obtendremos lo siguiente:
+
+```
+commit 61b00efe848fa132456de5895847694589b92a79
+Author: Sebastian Vera <work@email.com>
+Date:   Tue Mar 19 13:41:28 2019 +0000
+
+    Initial commit
+```
+
+> Esta configuración será exclusiva de `~/code/work/work-project-2` y será
+> almacenada en `~/code/work/work-project-2/.git/config`
+
+### Configuraciones condicionales (Recomendado)
+
+Es muy probable que queramos ocupar la misma configuración para todos los
+repositorios dentro de la carpeta `~/code/work`, sería tedioso tener que volver
+a ejecutar cada uno de los comandos cada vez que clonemos/creemos un nuevo
+repositorio a nuestro directorio de trabajo.
+
+Aquí es donde entra [git conditional includes], ya que nos permite
+condicionalmente cargar un archivo de configuración en una dirección específica.
+
+> You can include a config file from another conditionally by setting a
+> includeIf.<condition>.path variable to the name of the file to be included
+
+- Creemos primero un archivo `~/.gitconfig-work` con las opciones que
+  necesitemos, por ejemplo:
+
+```git
+[user]
+  email = work@email.com
+[rebase] # configuración extra a modo de ejemplo
+  autosquash = true
+```
+
+- Una vez ya tenemos nuestro archivo con las configuraciones para nuestros
+  repositorios de trabajos, procedemos a decirle a git que lo cargue cada vez
+  que estemos dentro de un directorio en `~/code/work`, para esto, abramos
+  nuestro archivo de configuración global (`~/.gitconfig`) y agreguemos lo
+  siguiente:
+
+```git{4,5}
+[user]
+  name = Sebastian Vera
+  email = personal@email.com
+[includeIf "gitdir:~/code/work/"]
+  path = ~/.gitconfig-work
+```
+
+-------
+
+Ejemplos:
+- Firmar o no firmar los commits
+- En una de las config hacer pull rebase
+
+
+Desde qué versión de git
+
+Dónde poner la config
+
+Ejemplos de distintos commits
+
+
+[conditional includes]: https://git-scm.com/docs/git-config#_conditional_includes
+[git conditional includes]: https://git-scm.com/docs/git-config#_conditional_includes
