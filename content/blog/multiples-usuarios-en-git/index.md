@@ -40,14 +40,14 @@ Supongamos que estructuramos nuestros proyectos de la siguiente forma:
 
 Si configuramos globalmente nuestro correo personal con:
 
-```
+```bash
 git config --global user.name "Sebastian Vera"
 git config --global user.email "personal@email.com"
 ```
 
 Nuestro archivo `~/.gitconfig` tendrá el siguiente contenido:
 
-```
+```c
 [user]
   name = Sebastian Vera
   email = personal@email.com
@@ -56,7 +56,7 @@ Nuestro archivo `~/.gitconfig` tendrá el siguiente contenido:
 Ahora cada vez que realicemos un commit, independiente al proyecto o carpeta en
 donde estemos, se hará uso de nuestro reciente nombre y correo configurado.
 
-```
+```markdown
 commit af7651e45f59247e1a91b19cc62aff5b56accca2
 Author: Sebastian Vera <personal@email.com>
 Date:   Tue Mar 19 14:23:01 2019 +0000
@@ -72,13 +72,13 @@ sub-carpeta del directorio `work`, aunque esta vez sólo veremos 2.
 Git nos permite tener configuraciones locales en cada carpeta, por ejemplo, si
 entramos entramos al directorio `~/code/work/work-project-2` y ejecutamos:
 
-```
+```bash
 git config user.email "work@email.com"
 ```
 
 Al crear un commit, obtendremos lo siguiente:
 
-```
+```markdown
 commit 61b00efe848fa132456de5895847694589b92a79
 Author: Sebastian Vera <work@email.com>
 Date:   Tue Mar 19 13:41:28 2019 +0000
@@ -100,12 +100,12 @@ Aquí es donde [git conditional includes] entra en acción, permitiendonos carga
 condicionalmente una configuración en una dirección específica.
 
 > You can include a config file from another conditionally by setting a
-> includeIf.<condition>.path variable to the name of the file to be included
+> includeIf.\<condition\>.path variable to the name of the file to be included
 
 - Creemos primero un archivo `~/.gitconfig-work` con las opciones que
   necesitemos, por ejemplo:
 
-```git
+```c
 [user]
   email = work@email.com
 ```
@@ -118,12 +118,14 @@ condicionalmente una configuración en una dirección específica.
   nuestro archivo de configuración global (`~/.gitconfig`) y agreguemos lo
   siguiente:
 
-```git{4,5}
+```git
 [user]
   name = Sebastian Vera
   email = personal@email.com
+// highlight-start
 [includeIf "gitdir:~/code/work/"]
   path = ~/.gitconfig-work
+// highlight-end
 ```
 
 Como resultado de esta configuración, todos los repositorios bajo el directorio
