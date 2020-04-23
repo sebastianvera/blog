@@ -1,9 +1,27 @@
 import React from "react"
 import { Link } from "gatsby"
+import { useStaticQuery, graphql } from "gatsby"
 
 import { rhythm, scale } from "../utils/typography"
 
 const Layout = ({ location, title, children }) => {
+  const {
+    site: {
+      siteMetadata: { social },
+    },
+  } = useStaticQuery(graphql`
+    query LayoutQuery {
+      site {
+        siteMetadata {
+          social {
+            twitter
+            github
+          }
+        }
+      }
+    }
+  `)
+
   const rootPath = `${__PATH_PREFIX__}/`
   let header
 
@@ -59,6 +77,15 @@ const Layout = ({ location, title, children }) => {
       <header>{header}</header>
       <main>{children}</main>
       <footer>
+        <div>
+          <a target="_blank" href={`https://github.com/${social.github}`}>
+            github
+          </a>{" "}
+          {` - `}
+          <a target="_blank" href={`https://twitter.com/${social.twitter}`}>
+            twitter
+          </a>
+        </div>
         © {new Date().getFullYear()}, Built with
         {` `}
         <a href="https://www.gatsbyjs.org">Gatsby</a>
