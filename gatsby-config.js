@@ -12,8 +12,8 @@ module.exports = {
       github: `sebastianvera`,
     },
     work: {
-      companyName: "cision",
-      twitter: "https://twitter.com/Cision",
+      companyName: `cision`,
+      twitter: `Cision`,
     },
   },
   plugins: [
