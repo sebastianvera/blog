@@ -6,7 +6,7 @@ module.exports = {
       summary: `Software Developer actualmente viviendo en Berlin y trabajando como Fullstack Developer en `,
     },
     description: `Personal blog by Sebastian Vera.`,
-    siteUrl: `https://gatsby-starter-blog-demo.netlify.com/`,
+    siteUrl: `https://blog.apipath.io`,
     social: {
       twitter: `sebalvear`,
       github: `sebastianvera`,
