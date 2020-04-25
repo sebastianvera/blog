@@ -1,0 +1,249 @@
+---
+title: ¿Por qué Vim no es un editor de texto común?
+date: "2020-04-25T15:25:00.000Z"
+description: "Este post explica algunas de las principales diferencias entre Vim
+y editores de textos modernos"
+tags: vim, neovim, modal editor, editor modal
+---
+
+import Figure from '../../../src/components/figure';
+import search1 from './search1.gif';
+import search2 from './search2.gif';
+import subs1 from './subs1.gif';
+import subs2 from './subs2.gif';
+import subs3 from './subs3.gif';
+import jump1 from './jump1.gif';
+import caps1 from './caps1.gif';
+import caps2 from './caps2.gif';
+import caps3 from './caps3.gif';
+import caps4 from './caps4.gif';
+import c1 from './c1.gif';
+import c2 from './c2.gif';
+import c3 from './c3.gif';
+import c4 from './c4.gif';
+import c5 from './c5.gif';
+import c6 from './c6.gif';
+import c7 from './c7.gif';
+import c8 from './c8.gif';
+import c9 from './c9.gif';
+import c10 from './c10.gif';
+import c11 from './c11.gif';
+import c12 from './c12.gif';
+
+Quizás te has preguntado cuál es la diferencia entre ocupar [Vim] o [Sublime Text],
+[Atom], [VS Code], etc. La principal diferencia es que Vim tiene como foco ser un
+editor de texto que aumenta la productividad en su propósito más básico,
+["editar y crear cualquier tipo de texto de manera eficiente"](https://vim.org).
+
+La idea de este post es dar a conocer algunas de las características más básicas
+de este editor y motivarte a ocupar esta gran herramienta, que en mi caso, ha
+significado un gran incremento de productividad al momento editar texto o
+programar.
+
+> Vim además de ser un editor de texto no convencional, tiene varios de los
+> mismos plugins que Atom, VS Code, Sublime Text, etc. los cuales no serán
+> cubiertos en este post, sólo se considerarán los que son específicos de Vim.
+
+# Funcionalidades integradas
+
+Al utilizar Vim, nuestra interacción con el mouse es innecesaria, dado que al
+ser un editor modal, la mayoría del tiempo estás navegando, borrando o moviendo
+texto más que escribiendo código. Sin entrar mucho en detalle, explicaré
+brevemente cómo funciona Vim.
+
+Éste editor consta de 3 modos básicos, donde sólo uno de ellos puede estar
+activado a la vez, de esta forma podemos navegar, seleccionar, modificar e
+insertar textos:
+
+- **Normal Mode**: Todo lo que tipeamos en _Normal Mode_ es considerado un comando
+  y mediante éstos podemos movernos, navegar a través del código (por ej.
+  utilizando las teclas 'h', 'j', 'k' y 'l'), además, podemos borrar, copiar,
+  mover textos, etc. La mayor parte del tiempo cuando ocupamos Vim estamos en
+  este modo, supongo que de ahi viene el nombre
+
+- **Insert Mode**: Utilizamos este modo para agregar texto dentro del buffer,
+  como si estuviesemos ocupando cualquier otro editor de texto
+
+- **Visual Mode**: Esto es _normal mode_ con la diferencia que los comandos de
+  moviemiento extienden una área de selección, permitiendonos seleccionar texto
+  sin la ayuda del mouse
+
+Ahora que ya tenemos más o menos la idea de que existen al menos 3 distintos
+modos en Vim, les mostraré comandos básicos que se utilizan estando en
+_"Normal Mode"_.
+
+> A la derecha de cada gif se visualizan las teclas que presiono para llevar a
+> cabo el comando.
+
+## Búsquedas
+
+Con simplemente una tecla podemos hacer búsquedas de la siguiente o anterior
+ocurrencia de la palabra en el cursor:
+
+<Figure image={search1}>
+  Siguiente ocurrencia de la palabra sobre el cursor
+</Figure>
+
+<Figure image={search2}>
+  Anterior ocurrencia de la palabra sobre el cursor
+</Figure>
+
+## Buscar y reemplazar
+
+Sustituir texto ya sea dentro del archivo completo, una selección o en la línea
+actual es tan simple como:
+
+<Figure image={subs1}>
+  Sustituir palabra en archivo completo
+</Figure>
+
+<Figure image={subs2}>
+  Sustituir palabra en archivo completo
+</Figure>
+
+> **%**: hace referencia al archivo completo (_buffer_)
+
+<Figure image={subs3}>
+  Sustituir palabra en la línea actual
+</Figure>
+
+## Saltar al archivo anterior
+
+Vim conoce los archivos y las líneas que hemos modificado recientemente, lo que
+nos permite hacer lo siguiente:
+
+<Figure image={jump1}>
+  Saltar entre archivo actual y último archivo
+</Figure>
+
+> `e: file/path/foo.js` permite editar un archivo, recibiendo como parámetro el
+> path relativo al directorio de trabajo actual. Puedes utilizar `:pwd` para
+> imprimir el directorio de trabajo actual.
+
+## Cambio de minúsculas y mayúsculas
+
+Cambiar palabra minúscula a mayúscula, puede sonar un detalle, pero nunca está
+de más, sobretodo si tenemos variables con nombres largos.
+
+<Figure image={caps1}>
+  Cambiar palabra a minúscula
+</Figure>
+
+<Figure image={caps2}>
+  Cambiar palabra a mayúscula
+</Figure>
+
+<Figure image={caps3}>
+  Cambiar contenido dentro del tag HTML a minúscula. <b>Es necesario el
+  plugin</b> <a rel="noopener noreferrer" target="_blank" href="https://github.com/tpope/vim-surround">vim-surround</a>
+</Figure>
+
+<Figure image={caps4}>
+  Cambiar contenido dentro del tag HTML a mayúscula. <b>Es necesario el
+  plugin</b> <a rel="noopener noreferrer" target="_blank" href="https://github.com/tpope/vim-surround">vim-surround</a>
+</Figure>
+
+## Modificar texto dentro o alrededor de X
+
+Si quisiéramos cambiar el texto que se encuentra dentro de, ya sea comillas
+simples, dobles, paréntesis, brackets, tags HTML, etc. no existe necesidad de
+seleccionar el texto con el mouse para luego reemplazarlo:
+
+<Figure image={c1}>
+  Cambiar texto dentro de comillas simples
+</Figure>
+
+<Figure image={c2}>
+  Cambiar texto dentro de una palabra
+</Figure>
+
+<Figure image={c3}>
+  Cambiar texto dentro de un paréntesis
+</Figure>
+
+<Figure image={c4}>
+  Borrar palabra y sus espacios circundantes
+</Figure>
+
+<Figure image={c5}>
+  Borrar paréntesis circundantes. <b>Es necesario el
+  plugin</b> <a rel="noopener noreferrer" target="_blank" href="https://github.com/tpope/vim-surround">vim-surround</a>
+</Figure>
+
+<Figure image={c6}>
+  Cambiar paréntesis por brackets. <b>Es necesario el
+  plugin</b> <a rel="noopener noreferrer" target="_blank" href="https://github.com/tpope/vim-surround">vim-surround</a>
+</Figure>
+
+<Figure image={c7}>
+  Cambiar comillas dobles por simples. <b>Es necesario el
+  plugin</b> <a rel="noopener noreferrer" target="_blank" href="https://github.com/tpope/vim-surround">vim-surround</a>
+</Figure>
+
+<Figure image={c8}>
+  Cambiar texto dentro del método de ruby. <b>Es necesario el
+  plugin</b> <a rel="noopener noreferrer" target="_blank" href="https://github.com/vim-ruby/vim-ruby">vim-ruby</a>
+</Figure>
+
+<Figure image={c9}>
+  Cambiar tag circundante. <b>Es necesario el
+  plugin</b> <a rel="noopener noreferrer" target="_blank" href="https://github.com/tpope/vim-surround">vim-surround</a>
+</Figure>
+
+<Figure image={c10}>
+  Cambiar tag circundante. <b>Es necesario el
+  plugin</b> <a rel="noopener noreferrer" target="_blank" href="https://github.com/tpope/vim-surround">vim-surround</a>
+</Figure>
+
+<Figure image={c11}>
+  Borrar tag circundante. <b>Es necesario el
+  plugin</b> <a rel="noopener noreferrer" target="_blank" href="https://github.com/tpope/vim-surround">vim-surround</a>
+</Figure>
+
+<Figure image={c12}>
+  Cambiar texto dentro del tag HTML
+</Figure>
+
+----
+
+## vim-surround
+
+Este plugin "añade" un nuevo "_text object_" a Vim, lo que nos permite
+interactuar con pares de caracteres envolventes, como paréntesis, tags HTML,
+comillas, etc. como si fuese nativo de este editor.
+
+> This plugin is a tool for dealing with pairs of “surroundings.” Examples of
+> surroundings include parentheses, quotes, and HTML tags. They are closely
+> related to what Vim refers to as |text-objects|. Provided are mappings to
+> allow for removing, changing, and adding surroundings.
+
+----
+
+Espero con este post haber despertado tu curiosidad. Quiero recalcar que el
+objetivo de este post es mostrar cómo Vim se **diferencia** de otros editores, la
+intención no es enseñar cómo utilizarlo. Ésto es sólo la punta del iceberg, hay
+muchas cosas que no quise cubrir en este post, de lo contrario sería muy largo,
+plugins, autocomplete, snippets, linters, macros, registros, repetir la acción
+anterior (con la tecla `.`), etc.
+
+Dejaré algunos links que pueden ser de ayuda:
+
+- [Neovim], fork the Vim enfocado en extensibilidad y usabilidad
+- Mi configuración de [Neovim]:
+  https://gist.github.com/sebastianvera/4946c6e14974701bc57e13a86058962d
+- Canal de Youtube de Greg Hurrel, quien tiene muchos videos sobre Vim:
+  https://www.youtube.com/channel/UCXPHFM88IlFn68OmLwtPmZA
+- Canal de Youtube de [thoughtbot], companía en la que trabajan muchos Vimmers
+  https://www.youtube.com/user/ThoughtbotVideo/search?query=vim
+
+Cualquier duda o pregunta mi twitter se encuentra a pie de esta página, espero
+haya sido de ayuda.
+
+¡Hasta la próxima!
+
+[Vim]: https://vim.org
+[Neovim]: https://neovim.io
+[Sublime Text]: https://www.sublimetext.com/
+[Atom]: https://atom.io/
+[VS Code]: https://code.visualstudio.com/
+[thoughtbot]: https://thoughtbot.com/
