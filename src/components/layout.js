@@ -78,11 +78,19 @@ const Layout = ({ location, title, children }) => {
       <main>{children}</main>
       <footer>
         <div>
-          <a target="_blank" href={`https://github.com/${social.github}`}>
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`https://github.com/${social.github}`}
+          >
             github
           </a>{" "}
           {` - `}
-          <a target="_blank" href={`https://twitter.com/${social.twitter}`}>
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`https://twitter.com/${social.twitter}`}
+          >
             twitter
           </a>
         </div>

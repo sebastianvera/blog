@@ -62,7 +62,11 @@ const Bio = () => {
       />
       <p>
         {author.summary}
-        <a target="_blank" href={`https://twitter.com/${work.twitter}`}>
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          href={`https://twitter.com/${work.twitter}`}
+        >
           @{work.companyName}
         </a>
       </p>
