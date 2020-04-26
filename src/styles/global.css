@@ -11,6 +11,10 @@
   margin: 0;
 }
 
+.autolink {
+  box-shadow: none;
+}
+
 .gatsby-highlight-code-line {
   display: block;
   background-color: #3a4b54;
