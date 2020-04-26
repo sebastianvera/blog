@@ -17,11 +17,11 @@
 
 .gatsby-highlight-code-line {
   display: block;
-  background-color: #3a4b54;
+  background-color: #3c3c3c;
   margin-right: -1em;
   margin-left: -1em;
   padding-right: 1em;
   padding-left: 0.6em;
-  border-left: 0.4em solid #7dc699;
+  border-left: 0.4em solid #65b182;
 }
 
