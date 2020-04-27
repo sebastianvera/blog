@@ -1,9 +1,46 @@
+@import "nord.css";
+
+/* TODO: hsla and rgba cannot accept CSS variables, idk why */
+
+:root {
+  --color-text: black;
+  --color-background: white;
+  --color-primary: var(--nord10); /* used in typography.js file */
+  --color-secondary: var(--nord8);
+  --color-tertiary: var(--nord9); /* used in typography.js file */
+  --color-caption: hsla(0, 0%, 0%, 0.54);
+  --color-blockquote: hsla(0, 0%, 0%, 0.59);
+  --color-blockquote-border: hsla(0, 0%, 0%, 0.9); /* used in typography.js file */
+  --color-divider: hsla(0, 0%, 0%, 0.2);
+}
+
+body.dark-mode {
+  --color-background: var(--nord0);
+  --color-text: var(--nord4);
+  --color-primary: var(--nord8); /* used in typography.js file */
+  --color-secondary: var(--nord10);
+  --color-tertiary: var(--nord13); /* used in typography.js file */
+  --color-caption: var(--nord5);
+  --color-blockquote: rgba(255, 255, 255, 0.59);
+  --color-blockquote-border: var(--nord4); /* used in typography.js file */
+  --color-divider: rgba(255, 255, 255, 0.2);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+hr {
+  background: var(--color-divider);
+}
+
 .caption {
   margin: 0;
   text-align: center;
   line-height: 1.4;
   font-weight: 300;
-  color: hsla(0, 0%, 0%, 0.54);
+  color: var(--color-caption); 
   font-size: 85%;
 }
 
@@ -13,6 +50,7 @@
 
 .autolink {
   box-shadow: none;
+  color: var(--color-text);
 }
 
 .gatsby-highlight-code-line {
@@ -22,6 +60,9 @@
   margin-left: -1em;
   padding-right: 1em;
   padding-left: 0.6em;
-  border-left: 0.4em solid #65b182;
+  border-left: 0.4em solid var(--nord14);
 }
 
+blockquote {
+  color: var(--color-blockquote);
+}
