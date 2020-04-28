@@ -2,6 +2,7 @@ import React from "react"
 import { Link } from "gatsby"
 import { useStaticQuery, graphql } from "gatsby"
 
+import DarkToggle from "./dark-toggle"
 import { rhythm, scale } from "../utils/typography"
 
 const Layout = ({ location, title, children }) => {
@@ -27,42 +28,60 @@ const Layout = ({ location, title, children }) => {
 
   if (location.pathname === rootPath) {
     header = (
-      <h1
+      <div
         style={{
-          ...scale(1.5),
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           marginBottom: rhythm(1.5),
-          marginTop: 0,
         }}
       >
-        <Link
+        <h1
           style={{
-            boxShadow: `none`,
-            color: `inherit`,
+            ...scale(1.5),
+            margin: 0,
           }}
-          to={`/`}
         >
-          {title}
-        </Link>
-      </h1>
+          <Link
+            style={{
+              boxShadow: `none`,
+              color: `inherit`,
+            }}
+            to={`/`}
+          >
+            {title}
+          </Link>
+        </h1>
+        <DarkToggle />
+      </div>
     )
   } else {
     header = (
-      <h3
+      <div
         style={{
-          fontFamily: `Montserrat, sans-serif`,
-          marginTop: 0,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
         }}
       >
-        <Link
+        <h3
           style={{
-            boxShadow: `none`,
-            color: `inherit`,
+            fontFamily: `Montserrat, sans-serif`,
+            margin: 0,
           }}
-          to={`/`}
         >
-          {title}
-        </Link>
-      </h3>
+          <Link
+            style={{
+              boxShadow: `none`,
+              color: `inherit`,
+            }}
+            to={`/`}
+          >
+            {title}
+          </Link>
+        </h3>
+        <DarkToggle />
+      </div>
     )
   }
   return (
