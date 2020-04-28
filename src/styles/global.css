@@ -6,19 +6,18 @@
   --color-text: black;
   --color-background: white;
   --color-primary: var(--nord10); /* used in typography.js file */
-  --color-secondary: var(--nord8);
   --color-tertiary: var(--nord9); /* used in typography.js file */
   --color-caption: hsla(0, 0%, 0%, 0.54);
   --color-blockquote: hsla(0, 0%, 0%, 0.59);
   --color-blockquote-border: hsla(0, 0%, 0%, 0.9); /* used in typography.js file */
   --color-divider: hsla(0, 0%, 0%, 0.2);
+  --color-selection: var(--nord9);
 }
 
 body.dark-mode {
   --color-background: var(--nord0);
-  --color-text: var(--nord4);
+  --color-text: var(--nord6);
   --color-primary: var(--nord8); /* used in typography.js file */
-  --color-secondary: var(--nord10);
   --color-tertiary: var(--nord13); /* used in typography.js file */
   --color-caption: var(--nord5);
   --color-blockquote: rgba(255, 255, 255, 0.59);
