@@ -38,7 +38,7 @@ const Layout = ({ location, title, children }) => {
       >
         <h1
           style={{
-            ...scale(1.5),
+            ...scale(1.1),
             margin: 0,
           }}
         >
