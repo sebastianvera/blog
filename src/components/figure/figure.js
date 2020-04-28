@@ -12,7 +12,7 @@ function Figure({ image, children }) {
       <img
         className={cn("m-0", { [styles.dark]: isDarkMode })}
         src={image}
-        alt={children}
+        alt=""
       />
       <figcaption aria-hidden="true" className="text-center caption">
         {children}
