@@ -1,0 +1,32 @@
+---
+title: Subscripciones GraphQL con gqlgen
+date: "2020-12-25T23:28:00.000Z"
+description: "¿No sabes cómo implementar subscripciones de GraphQL en Golang? Este post explica cómo utilizar 
+react, apollo y gqlgen"
+tags: "ppoker, apipath, react, graphql, real-time, golang, subscriptions,
+apollo, qlgen, gqlgen subscriptions"
+---
+
+A la fecha, no hay tutoriales sobre cómo manejar subscripciones de graphql con
+[gqlgen] y [apollo], por lo que quiero compartir cómo yo he utilizado ambas
+tecnologías para desarrollar una simple aplicación.
+
+> Debo mencionar y dar las gracias a [mtavano] por la construcción del backend
+>  👏👏 👏.
+
+## Aplicación a desarrollar
+
+La idea es crear una app dónde podamos agregar reseñas o "reviews" a usuarios de
+github de manera anónima. La aplicación no necesita registrar usuarios y el
+único requisito es que podamos ver las reseñas en tiempo real.
+
+<video controls width="100%" src="./ghreviews.webm" type="video/webm">
+    Disculpa, tu navegador no es compatible con videos incrustados.
+</video>
+
+
+[ppoker]: https://ppoker.apipath.io
+[gqlgen]: https://github.com/99designs/gqlgen
+[go]: https://golang.org/
+[apollo]: https://www.apollographql.com/
+[mtavano]: https://github.com/mtavano
