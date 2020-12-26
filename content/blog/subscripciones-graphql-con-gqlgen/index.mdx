@@ -10,6 +10,7 @@ apollo, qlgen, gqlgen subscriptions"
 import Figure from "../../../src/components/figure"
 import landing from "./landing.png"
 import reviews from "./reviews.png"
+import gif from './ghreviews.gif'
 
 A la fecha, no hay tutoriales sobre cómo manejar suscripciones de graphql con
 [gqlgen] y [apollo], por lo que quiero compartir cómo yo he utilizado ambas
@@ -21,7 +22,7 @@ tecnologías para desarrollar una simple aplicación.
 En este post se asume que tienes un conocimiento básico de GraphQL y/o sabes
 cómo escribir escribir _"queries"_ y _"mutations"_.
 
-> Agregar links
+- [Queries and mutations](https://graphql.org/learn/queries/)
 
 ## Aplicación a desarrollar
 
@@ -29,9 +30,7 @@ La idea es crear una app dónde podamos agregar reseñas o "reviews" a usuarios 
 github de manera anónima. La aplicación no necesita registrar usuarios y el
 único requisito es que podamos ver las reseñas en tiempo real.
 
-<video controls width="100%" src="./ghreviews.webm" type="video/webm">
-  Disculpa, tu navegador no es compatible con videos incrustados.
-</video>
+<Figure image={gif}>Ejemplo de aplicación</Figure>
 
 ### Frontend
 
@@ -382,7 +381,6 @@ guardar este canal y de borrarlo cuando el cliente se desconecte.
 ```go
 // resolver.go
 package graph
-import (...)
 
 func (r *subscriptionResolver) Feed(ctx context.Context) (<-chan *GhReviewsEvent, error) {
 	// Obtener 20 reviews más recientes
