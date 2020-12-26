@@ -1,18 +1,27 @@
 ---
-title: Subscripciones GraphQL con gqlgen
+title: Suscripciones GraphQL con gqlgen
 date: "2020-12-25T23:28:00.000Z"
-description: "¿No sabes cómo implementar subscripciones de GraphQL en Golang? Este post explica cómo utilizar 
+description: "¿No sabes cómo implementar suscripciones de GraphQL en Golang? Este post explica cómo utilizar 
 react, apollo y gqlgen"
 tags: "ppoker, apipath, react, graphql, real-time, golang, subscriptions,
 apollo, qlgen, gqlgen subscriptions"
 ---
 
-A la fecha, no hay tutoriales sobre cómo manejar subscripciones de graphql con
+import Figure from '../../../src/components/figure';
+import landing from './landing.png';
+import reviews from './reviews.png';
+
+A la fecha, no hay tutoriales sobre cómo manejar suscripciones de graphql con
 [gqlgen] y [apollo], por lo que quiero compartir cómo yo he utilizado ambas
 tecnologías para desarrollar una simple aplicación.
 
 > Debo mencionar y dar las gracias a [mtavano] por la construcción del backend
->  👏👏 👏.
+> y la revisión de este post 👏👏 👏.
+
+En este post se asume que tienes un conocimiento básico de GraphQL y/o sabes
+cómo escribir escribir *"queries"* y *"mutations"*.
+
+> Agregar links 
 
 ## Aplicación a desarrollar
 
@@ -24,9 +33,248 @@ github de manera anónima. La aplicación no necesita registrar usuarios y el
     Disculpa, tu navegador no es compatible con videos incrustados.
 </video>
 
+### Frontend
 
-[ppoker]: https://ppoker.apipath.io
+Comenzaremos primero descomponiendo el frontend, de esta manera tendremos una
+visión mas clara de lo que necesitamos una vez que pasemos al Backend.
+
+La apliación está compuesta de dos páginas:
+
+#### Landing Page
+
+En esta página tenemos un input para revisar las reseñas de un usuario en
+específico y también tenemos la sección de reseñas en vivo, cual estará
+potenciado por [suscripciones GraphQL].
+
+<Figure image={landing}>
+  Landing page
+</Figure>
+
+#### Review Page
+
+Esta página muestra información sobre un usuario de github en específico, por
+ej, avatar, número de seguidores y de usuarios a los que sigue, ésta información
+la obtendremos con el API de github:
+- https://api.github.com/users/:username
+
+El valor para el campo **"REVIEWS"** será
+enviado por nuestro Backend, pero ya hablaremos de esto más adelante. También
+hay una sección para dejar una reseña y finalmente, al igual que en la página
+anterior, una sección de reseñas en vivo, pero esta vez son sólo reseñas que
+pertenecen a este usuario.
+
+<Figure image={reviews}>
+  Review page
+</Figure>
+
+#### Demo APP
+
+<iframe src="https://codesandbox.io/embed/ghreviews-hu1j9?autoresize=1&fontsize=12&hidenavigation=1&theme=dark"
+  style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
+  title="ghreviews"
+  allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
+  sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
+></iframe>
+
+### GraphQL
+
+Para ésta aplicación tendremos el siguiente schema de GraphQL:
+
+```graphql
+# schema.graphql
+
+type Query {
+  # No se utiliza pero GraphQL necesita tener al menos 1 query
+  getReview(id: ID!): GhReview
+}
+
+type Mutation {
+  createReview(reviewInput: CreateReviewInput!): GhReview
+}
+
+type Subscription {
+  feed: GhReviewsEvent!
+  feedByUsername(username: String!): GhReviewsEvent!
+}
+
+input CreateReviewInput {
+  githubUsername: String!
+  githubAvatarURL: String!
+  content: String!
+}
+
+type GhReview {
+  id: ID!
+  githubUsername: String!
+  githubAvatarURL: String!
+  content: String!
+  createdAt: Int!
+}
+
+type GhReviewsEvent {
+  total: Int!
+  newReviews: [GhReview!]!
+}
+```
+
+### ¿Qué son las suscripciones graphql?
+
+*"Las [suscripciones] son una característica de [GraphQL] que permite a un
+servidor enviar datos a sus clientes cuando ocurre un evento específico. Las
+suscripciones se implementan normalmente con WebSockets. En esa configuración,
+el servidor mantiene una conexión constante con su cliente suscrito. Esto
+también rompe el "Ciclo de solicitud-respuesta"(Request-Response-Cycle) que se
+utilizaba para todas las interacciones anteriores con la API.*
+
+*En cambio, el cliente abre inicialmente una conexión de larga duración con el
+servidor enviando una consulta de suscripción que especifica en qué evento está
+interesado. Cada vez que se produce este evento en particular, el servidor
+utiliza la conexión para enviar los datos del evento al cliente o clientes
+suscritos."*
+
+> Literalmente traducido desde: https://www.howtographql.com/graphql-js/7-subscriptions/
+
+### Implementando suscripciones con [Apollo]
+
+En nuestro caso crearemos dos posibles suscripciones:
+- **feed**
+- **feedByUsername**
+
+```graphql
+# schema.graphql
+
+type Subscription {
+  feed: GhReviewsEvent!
+  feedByUsername(username: String!): GhReviewsEvent!
+}
+
+type GhReviewsEvent {
+  total: Int!
+  newReviews: [GhReview!]!
+}
+
+type GhReview {
+  id: ID!
+  githubUsername: String!
+  githubAvatarURL: String!
+  content: String!
+  createdAt: Int!
+}
+```
+
+Ambas suscripciones recibirán un mensaje del tipo `GhReviewsEvent`, en dónde
+recibiremos:
+- `total`: representa la cantidad total de *"reviews"*
+- `newReviews`: un arreglo con las nuevas reseñas, por lo general será un
+  arreglo de largo 1, a diferencia de la primera vez que el cliente se suscriba,
+  en ese caso enviaremos los 20 reviews mas recientes
+
+**Suscripción feed**
+
+Partiremos definiendo cómo esperemos consumir la data desde nuestros componentes:
+
+```jsx
+function LandingPage() {
+  const {
+    data: { reviews, total },
+    loading,
+    error,
+  } = useFeed();
+
+  return (
+    ...
+  );
+}
+```
+
+Queremos tener un [hook] llamado `useFeed` que nos retorne un objeto `data` que
+contenga siempre un arreglo de `reviews` y un `total`. En un inicio la variable
+`reviews` será un arreglo vacío y `total` será `0`, ya una vez el servidor
+emita un `GhReviewsEvent`, actualizaremos sus respectivos valores:
+
+```js
+// use-feed.js
+
+import { useState, useEffect } from 'react';
+import { gql, useSubscription } from '@apollo/client';
+
+const MAX_REVIEWS = 20;
+
+const FEED_PUBLIC_SUBSCRIPTION = gql`
+  subscription PublicFeed {
+    feed {
+      total
+      newReviews {
+        id
+        content
+        githubUsername
+        githubAvatarURL
+        createdAt
+      }
+    }
+  }
+`;
+
+function useFeed() {
+  const { data, loading, error } = useSubscription(FEED_PUBLIC_SUBSCRIPTION);
+
+  const total = data?.feed.total ?? 0;
+  const reviews = data?.feed.newReviews ?? [];
+
+  return { data: { reviews, total }, loading, error };
+}
+
+export default useFeed;
+```
+
+Esta implementación tiene un solo problema, dado que el servidor siempre retorna
+nuevos reviews, significa que cada vez que recibamos un `GhReviewsEvent`, perderemos los
+reviews anteriores. Para solucionar este problema utilizaremos `useState` y
+guardaremos todos los reviews recibidos:
+
+```js
+import { useState, useEffect } from 'react';
+import { gql, useSubscription } from '@apollo/client';
+
+const MAX_REVIEWS = 20;
+
+const FEED_PUBLIC_SUBSCRIPTION = gql`
+  subscription PublicFeed {
+    feed {
+      total
+      newReviews {
+        id
+        content
+        githubUsername
+        githubAvatarURL
+        createdAt
+      }
+    }
+  }
+`;
+
+function useFeed() {
+  const { data, loading, error } = useSubscription(FEED_PUBLIC_SUBSCRIPTION);
+  const [reviews, setReviews] = useState([]);
+  useEffect(() => {
+    if (!data || data.feed.newReviews.length === 0) return;
+
+    setReviews((reviews) =>
+      [...data.feed.newReviews, ...reviews].slice(0, MAX_REVIEWS),
+    );
+  }, [data]);
+
+  const total = data?.feed?.total ?? 0;
+  return { data: { reviews, total }, loading, error };
+}
+
+export default useFeed;
+```
+
 [gqlgen]: https://github.com/99designs/gqlgen
-[go]: https://golang.org/
 [apollo]: https://www.apollographql.com/
 [mtavano]: https://github.com/mtavano
+[suscripciones GraphQL]: https://www.apollographql.com/docs/react/data/subscriptions/
+[suscripciones]: https://www.howtographql.com/graphql-js/7-subscriptions
+[graphql]: https://graphql.org/
+[hook]: https://es.reactjs.org/docs/hooks-intro.html
