@@ -7,9 +7,9 @@ tags: "ppoker, apipath, react, graphql, real-time, golang, subscriptions,
 apollo, qlgen, gqlgen subscriptions"
 ---
 
-import Figure from '../../../src/components/figure';
-import landing from './landing.png';
-import reviews from './reviews.png';
+import Figure from "../../../src/components/figure"
+import landing from "./landing.png"
+import reviews from "./reviews.png"
 
 A la fecha, no hay tutoriales sobre cómo manejar suscripciones de graphql con
 [gqlgen] y [apollo], por lo que quiero compartir cómo yo he utilizado ambas
@@ -19,9 +19,9 @@ tecnologías para desarrollar una simple aplicación.
 > y la revisión de este post 👏👏 👏.
 
 En este post se asume que tienes un conocimiento básico de GraphQL y/o sabes
-cómo escribir escribir *"queries"* y *"mutations"*.
+cómo escribir escribir _"queries"_ y _"mutations"_.
 
-> Agregar links 
+> Agregar links
 
 ## Aplicación a desarrollar
 
@@ -30,7 +30,7 @@ github de manera anónima. La aplicación no necesita registrar usuarios y el
 único requisito es que podamos ver las reseñas en tiempo real.
 
 <video controls width="100%" src="./ghreviews.webm" type="video/webm">
-    Disculpa, tu navegador no es compatible con videos incrustados.
+  Disculpa, tu navegador no es compatible con videos incrustados.
 </video>
 
 ### Frontend
@@ -38,7 +38,7 @@ github de manera anónima. La aplicación no necesita registrar usuarios y el
 Comenzaremos primero descomponiendo el frontend, de esta manera tendremos una
 visión mas clara de lo que necesitamos una vez que pasemos al Backend.
 
-La apliación está compuesta de dos páginas:
+La aplicación está compuesta de dos páginas:
 
 #### Landing Page
 
@@ -46,15 +46,14 @@ En esta página tenemos un input para revisar las reseñas de un usuario en
 específico y también tenemos la sección de reseñas en vivo, cual estará
 potenciado por [suscripciones GraphQL].
 
-<Figure image={landing}>
-  Landing page
-</Figure>
+<Figure image={landing}>Landing page</Figure>
 
 #### Review Page
 
 Esta página muestra información sobre un usuario de github en específico, por
 ej, avatar, número de seguidores y de usuarios a los que sigue, ésta información
 la obtendremos con el API de github:
+
 - https://api.github.com/users/:username
 
 El valor para el campo **"REVIEWS"** será
@@ -63,18 +62,22 @@ hay una sección para dejar una reseña y finalmente, al igual que en la página
 anterior, una sección de reseñas en vivo, pero esta vez son sólo reseñas que
 pertenecen a este usuario.
 
-<Figure image={reviews}>
-  Review page
-</Figure>
+<Figure image={reviews}>Review page</Figure>
 
 #### Demo APP
 
-<iframe src="https://codesandbox.io/embed/ghreviews-hu1j9?autoresize=1&fontsize=12&hidenavigation=1&theme=dark"
+<iframe
+  src="https://codesandbox.io/embed/ghreviews-hu1j9?autoresize=1&fontsize=12&hidenavigation=1&theme=dark"
   style="width:100%; height:500px; border:0; border-radius: 4px; overflow:hidden;"
   title="ghreviews"
   allow="accelerometer; ambient-light-sensor; camera; encrypted-media; geolocation; gyroscope; hid; microphone; midi; payment; usb; vr; xr-spatial-tracking"
   sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
 ></iframe>
+
+El código de la aplicación está en:
+
+- **Frontend**: [codesandbox]
+- **Backend**: [github]
 
 ### GraphQL
 
@@ -94,7 +97,6 @@ type Mutation {
 
 type Subscription {
   feed: GhReviewsEvent!
-  feedByUsername(username: String!): GhReviewsEvent!
 }
 
 input CreateReviewInput {
@@ -119,33 +121,30 @@ type GhReviewsEvent {
 
 ### ¿Qué son las suscripciones graphql?
 
-*"Las [suscripciones] son una característica de [GraphQL] que permite a un
+_"Las [suscripciones] son una característica de [GraphQL] que permite a un
 servidor enviar datos a sus clientes cuando ocurre un evento específico. Las
 suscripciones se implementan normalmente con WebSockets. En esa configuración,
 el servidor mantiene una conexión constante con su cliente suscrito. Esto
 también rompe el "Ciclo de solicitud-respuesta"(Request-Response-Cycle) que se
-utilizaba para todas las interacciones anteriores con la API.*
+utilizaba para todas las interacciones anteriores con la API._
 
-*En cambio, el cliente abre inicialmente una conexión de larga duración con el
+_En cambio, el cliente abre inicialmente una conexión de larga duración con el
 servidor enviando una consulta de suscripción que especifica en qué evento está
 interesado. Cada vez que se produce este evento en particular, el servidor
 utiliza la conexión para enviar los datos del evento al cliente o clientes
-suscritos."*
+suscritos."_
 
 > Literalmente traducido desde: https://www.howtographql.com/graphql-js/7-subscriptions/
 
 ### Implementando suscripciones con [Apollo]
 
-En nuestro caso crearemos dos posibles suscripciones:
-- **feed**
-- **feedByUsername**
+En nuestro caso tendremos la suscripción **feed**:
 
 ```graphql
 # schema.graphql
 
 type Subscription {
   feed: GhReviewsEvent!
-  feedByUsername(username: String!): GhReviewsEvent!
 }
 
 type GhReviewsEvent {
@@ -162,9 +161,10 @@ type GhReview {
 }
 ```
 
-Ambas suscripciones recibirán un mensaje del tipo `GhReviewsEvent`, en dónde
+Ésta suscripción recibirá un mensaje del tipo `GhReviewsEvent`, en dónde
 recibiremos:
-- `total`: representa la cantidad total de *"reviews"*
+
+- `total`: representa la cantidad total de _"reviews"_
 - `newReviews`: un arreglo con las nuevas reseñas, por lo general será un
   arreglo de largo 1, a diferencia de la primera vez que el cliente se suscriba,
   en ese caso enviaremos los 20 reviews mas recientes
@@ -188,17 +188,17 @@ function LandingPage() {
 ```
 
 Queremos tener un [hook] llamado `useFeed` que nos retorne un objeto `data` que
-contenga siempre un arreglo de `reviews` y un `total`. En un inicio la variable
+contenga siempre un arreglo de `reviews` y un `total`. En un inicio, la variable
 `reviews` será un arreglo vacío y `total` será `0`, ya una vez el servidor
 emita un `GhReviewsEvent`, actualizaremos sus respectivos valores:
 
 ```js
 // use-feed.js
 
-import { useState, useEffect } from 'react';
-import { gql, useSubscription } from '@apollo/client';
+import { useState, useEffect } from "react"
+import { gql, useSubscription } from "@apollo/client"
 
-const MAX_REVIEWS = 20;
+const MAX_REVIEWS = 20
 
 const FEED_PUBLIC_SUBSCRIPTION = gql`
   subscription PublicFeed {
@@ -213,18 +213,18 @@ const FEED_PUBLIC_SUBSCRIPTION = gql`
       }
     }
   }
-`;
+`
 
 function useFeed() {
-  const { data, loading, error } = useSubscription(FEED_PUBLIC_SUBSCRIPTION);
+  const { data, loading, error } = useSubscription(FEED_PUBLIC_SUBSCRIPTION)
 
-  const total = data?.feed.total ?? 0;
-  const reviews = data?.feed.newReviews ?? [];
+  const total = data?.feed.total ?? 0
+  const reviews = data?.feed.newReviews ?? []
 
-  return { data: { reviews, total }, loading, error };
+  return { data: { reviews, total }, loading, error }
 }
 
-export default useFeed;
+export default useFeed
 ```
 
 Esta implementación tiene un solo problema, dado que el servidor siempre retorna
@@ -233,10 +233,10 @@ reviews anteriores. Para solucionar este problema utilizaremos `useState` y
 guardaremos todos los reviews recibidos:
 
 ```js
-import { useState, useEffect } from 'react';
-import { gql, useSubscription } from '@apollo/client';
+import { useState, useEffect } from "react"
+import { gql, useSubscription } from "@apollo/client"
 
-const MAX_REVIEWS = 20;
+const MAX_REVIEWS = 20
 
 const FEED_PUBLIC_SUBSCRIPTION = gql`
   subscription PublicFeed {
@@ -251,30 +251,275 @@ const FEED_PUBLIC_SUBSCRIPTION = gql`
       }
     }
   }
-`;
+`
 
 function useFeed() {
-  const { data, loading, error } = useSubscription(FEED_PUBLIC_SUBSCRIPTION);
-  const [reviews, setReviews] = useState([]);
+  const { data, loading, error } = useSubscription(FEED_PUBLIC_SUBSCRIPTION)
+  const [reviews, setReviews] = useState([])
   useEffect(() => {
-    if (!data || data.feed.newReviews.length === 0) return;
+    if (!data || data.feed.newReviews.length === 0) return
 
-    setReviews((reviews) =>
-      [...data.feed.newReviews, ...reviews].slice(0, MAX_REVIEWS),
-    );
-  }, [data]);
+    setReviews(reviews =>
+      [...data.feed.newReviews, ...reviews].slice(0, MAX_REVIEWS)
+    )
+  }, [data])
 
-  const total = data?.feed?.total ?? 0;
-  return { data: { reviews, total }, loading, error };
+  const total = data?.feed?.total ?? 0
+  return { data: { reviews, total }, loading, error }
 }
 
-export default useFeed;
+export default useFeed
 ```
+
+### Backend
+
+#### Estructura de directorios
+
+```
+.
+├── Makefile
+├── cmd
+│   └── server
+│       └── server.go
+├── database
+│   ├── count_reviews.go
+│   ├── create_review.go
+│   ├── create_review_test.go
+│   ├── get_last_reviews.go
+│   ├── review.go
+│   └── store.go
+├── docker-compose.yml
+├── go.mod
+├── go.sum
+├── gqlgen.yml
+├── pkg
+│   ├── graph
+│   │   ├── exec.go
+│   │   ├── model.go
+│   │   ├── resolver.go
+│   │   ├── schema.graphql
+│   │   └── server.go
+│   └── service
+│       └── review.go
+├── ghreviews.go
+└── testutil
+    └── get_test_db.go
+
+```
+
+En este caso, todo lo relativo a la aplicación quedará en `pkg` mientras que la definiciones
+de tipos y dominio de datos quedaran a nivel de root y `database` respectivamente
+
+##### Generación de código con gqlgen
+
+A partir de este schema graphql:
+
+```graphql
+type Subscription {
+  feed: GhReviewsEvent!
+}
+```
+
+[gqlgen] va a generar esta interfaz:
+
+```go
+type SubscriptionResolver interface {
+	Feed(ctx context.Context) (<-chan *GhReviewsEvent, error)
+}
+```
+
+> El comando para generar el código lo puedes ver el archivo [Makefile]
+
+La parte importante es el _channel_ de retorno, lo debemos
+guardar si queremos enviar datos al cliente. El parámetro `ctx` nos permitirá
+saber cuándo el cliente se ha desconectado por medio de la función `ctx.Done()`.
+
+Si queremos enviar un mensaje _broadcast_ a todos los clientes contectados,
+necesitamos tener en algún lado todos los channels (conexiones) que son retornados por ésta función.
+Esto se puede lograr de formar rápida con un mapa y guardar todos éstos
+canales, dónde la llave sea un `chan *GhReviewsEvent`, de esta manera si
+queremos borrar un canal del mapa cuando un usuario se desconecta, solamente
+tenemos que llamar a `delete(mapa, llave)`.
+
+```go
+// resolver.go
+package graph
+
+import (
+	"context"
+	"sync"
+
+	"github.com/mtavano/ghreviews"
+)
+
+type Resolver struct {
+	reviewService ghreviews.ReviewService
+	publicHubMU sync.RWMutex // debemos proteger lecturas y escrituras concurrentes en mapas en go
+	publicHub   map[chan *GhReviewsEvent]bool
+}
+
+func NewResolver(logger *logrus.Logger, reviewService ghreviews.ReviewService) *Resolver {
+	return &Resolver{
+		reviewService: reviewService,
+		publicHub:     make(map[chan *GhReviewsEvent]bool),
+	}
+}
+```
+
+Idealmente podríamos ocupar un `Set` en vez de un mapa, pero golang no tiene
+`Set` aún (generics ftw), por comodidad ocuparemos un `map` de `chan` y `bool`,
+pero no utilizaremos el valor, sólo nos interesan sus llaves.
+
+Ya con esto resuelto, podemos implementar nuestra función `Feed` para
+satisfacer la interfaz `SubscriptionResolver` generada por gqlgen:
+
+La función `Feed` se va a ejecutar la primera vez que el cliente se conecte
+(inicio de la suscripción) y su **principal objetivo** es retornar el `chan` por
+el cual gqlgen enviará data al cliente. Esto quiere decir que, si queremos
+enviar datos desde otras funciones/_handlers_, debemos preocuparnos de
+guardar este canal y de borrarlo cuando el cliente se desconecte.
+
+```go
+// resolver.go
+package graph
+import (...)
+
+func (r *subscriptionResolver) Feed(ctx context.Context) (<-chan *GhReviewsEvent, error) {
+	// Obtener 20 reviews más recientes
+	rr, err := r.reviewService.GetLastReviews()
+	if err != nil {
+		return nil, err
+	}
+
+	// Obtener total de reviews
+	total, err := r.reviewService.CountReviews()
+	if err != nil {
+		return nil, err
+	}
+
+	// Crear channel que manejará gqlgen para enviarle información al cliente
+	cr := make(chan *GhReviewsEvent, 1)
+
+	// Guardar channel en nuestro resolver para poder enviar mensajes en el futuro
+	// Proteger escritura del map
+	r.publicHubMU.Lock()
+	r.publicHub[cr] = true
+	r.publicHubMU.Unlock()
+
+	go func() {
+		// ctx.Done() retorna cuando el canal se cierra, ergo, el cliente se desconecta
+		<-ctx.Done()
+
+		// Proteger escritura del map
+		r.publicHubMU.Lock()
+		// Borrar channel de nuestro resolver, ya no es necesario guardarlo dado que el cliente se desconectó
+		delete(r.publicHub, cr)
+		r.publicHubMU.Unlock()
+	}()
+
+	// Enviar un evento al cliente
+	// Este es un mensaje inicial, en dónde enviamos el total de reviews y los 20 reviews más recientes
+	cr <- &GhReviewsEvent{Total: total, NewReviews: rr}
+
+	return cr, nil
+}
+
+
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
+type subscriptionResolver struct{ *Resolver }
+```
+
+Ahora podemos ocupar el mapa de conexiones dentro de la mutación
+`CreateReview` y enviarle un mensaje a todos los clientes conectados
+
+**Antes**
+
+```go
+// resolver.go
+package graph
+
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+type mutationResolver struct{ *Resolver }
+
+func (r *mutationResolver) CreateReview(ctx context.Context, reviewInput ghreviews.CreateReviewInput) (*ghreviews.GhReview, error) {
+	review, err := r.reviewService.CreateReview(
+		reviewInput.GithubUsername,
+		reviewInput.GithubAvatarURL,
+		reviewInput.Content,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return review, nil
+}
+```
+
+Ahora, una vez que ya creamos el review, obtendremos el nuevo total y luego
+enviaremos un mensaje a todos los channels/llaves del mapa `publicHub`:
+
+```go
+// resolver.go
+package graph
+
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+
+type mutationResolver struct{ *Resolver }
+
+func (r *mutationResolver) CreateReview(ctx context.Context, reviewInput ghreviews.CreateReviewInput) (*ghreviews.GhReview, error) {
+	review, err := r.reviewService.CreateReview(
+		reviewInput.GithubUsername,
+		reviewInput.GithubAvatarURL,
+		reviewInput.Content,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// --- Nuevo código
+	// Obtener nuevo total
+	total, err := r.reviewService.CountReviews(reviewInput.GithubUsername)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enviamos los mensajes en una goroutine para no bloquear la ejecución de la función actual
+	go func() {
+		msg := &GhReviewsEvent{Total: total, NewReviews: []*ghreviews.GhReview{review}}
+		// Proteger lectura del mapa
+		r.publicHubMU.RLock()
+		defer r.publicHubMU.RUnlock()
+
+		// Enviamos `msg` a cada channel guardado en `publicHub`
+		for channel := range r.publicHub {
+			channel <- msg
+		}
+	}()
+
+	return review, nil
+}
+```
+
+---
+
+La idea principal del post fue utilizar subscripciones de graphql con [apollo] y
+[gqlgen], espero que te sea de ayuda y si es necesario podriamos escribir una
+parte dos o entrar más en detalle ya sea en el frontend o el backend.
+
+---
+
+El código de [codesandbox] y [github] trae unos extras tales como
+suscripciones por usuario, uso de migraciones, algunos tests y logging.
 
 [gqlgen]: https://github.com/99designs/gqlgen
 [apollo]: https://www.apollographql.com/
 [mtavano]: https://github.com/mtavano
-[suscripciones GraphQL]: https://www.apollographql.com/docs/react/data/subscriptions/
+[suscripciones graphql]: https://www.apollographql.com/docs/react/data/subscriptions/
 [suscripciones]: https://www.howtographql.com/graphql-js/7-subscriptions
 [graphql]: https://graphql.org/
 [hook]: https://es.reactjs.org/docs/hooks-intro.html
+[codesandbox]: https://codesandbox.io/s/ghreviews-hu1j9
+[github]: https://github.com/mtavano/ghreviews
+[makefile]: https://github.com/mtavano/ghreviews/blob/master/Makefile#L12
