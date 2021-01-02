@@ -13,7 +13,7 @@ import gif from './ghreviews.gif'
 
 A la fecha, no hay tutoriales sobre cómo manejar suscripciones de graphql con
 [gqlgen], por lo que quiero compartir, en un tutorial de dos partes, cómo
-utilizar gqlgen en el backend y apollo en el frontend para desarrollar una
+utilizar [gqlgen] en el backend, apollo en el frontend y desarrollar una
 simple aplicación.
 
 > En este post se asume que tienes un conocimiento básico de GraphQL y/o sabes
@@ -51,15 +51,50 @@ github de manera anónima. La aplicación no necesita registrar usuarios y el
 
 > El código de la aplicación está en [github]
 
+Por simplicidad no tocaremos temas como bases de datos, migraciones, testing,
+tracing, métricas, etc. solo nos centraremos en cómo utilizar suscripciones
+graphql.
+
+### Estructura de directorios
+
+```
+.
+├── Makefile
+├── README.md
+├── cmd
+│   └── server
+│       └── server.go
+├── ghreviews.go
+├── go.mod
+├── go.sum
+├── gqlgen.yml
+└── pkg
+    ├── database
+    │   └── store.go
+    └── graph
+        ├── generated
+        │   ├── exec.go
+        │   └── model.go
+        ├── hub.go
+        ├── resolver.go
+        ├── schema.graphql
+        └── server.go
+```
+
+> [Acá](https://github.com/golang-standards/project-layout) se explica el
+> estándar ocupado para ésta estructura de directorios
+
 ### GraphQL
 
-Para ésta aplicación tendremos el siguiente schema de GraphQL:
+Para ésta aplicación tendremos el siguiente schema:
 
 ```graphql
-# schema.graphql
+# pkg/graph/schema.graphql
 
 type Query {
+  getMostRecentReviews(limit: Int): [Review!]!
   getReviewsByUsername(username: String!): [Review!]!
+  countReviewsByUsername(username: String!): Int!
 }
 
 type Mutation {
@@ -86,249 +121,547 @@ type Review {
 
 type NewReviewEvent {
   total: Int!
-  newReview: GhReview!
+  newReview: Review!
 }
 ```
 
-### Estructura de directorios
+### Entidades
+
+En este archivo definimos todas las entidades e interfaces que definen nuestro
+dominio de aplicación.
+
+```go
+// ghreviews.go
+package ghreviews
+
+// Review is the object that is sent to the client
+type Review struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	AvatarURL string `json:"avatarUrl"`
+	Content   string `json:"content"`
+	CreatedAt int64  `json:"createdAt"`
+}
+
+// ReviewService represents the interface of the data storage
+type ReviewService interface {
+	CreateReview(username, avatarURL, content string) (*Review, error)
+	GetMostRecentReviews(int) ([]*Review, error)
+	GetMostRecentReviewsByUsername(username string) ([]*Review, error)
+	CountReviews() (int, error)
+	CountReviewsByUsername(username string) (int, error)
+}
+```
+
+### Datastore
+
+En esta ocasión la implementación de `ReviewService` será simplemente una
+estructura que guardará los datos en memoria, pero perfectamente podriamos
+ocupar una base de datos como postgres, mysql, etc.
+
+```go
+// pkg/database/store.go
+package database
+
+import (
+	"strconv"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/sebastianvera/ghreviews"
+)
+
+var _ ghreviews.ReviewService = &Store{}
+
+// Store implements ReviewService interface but stores everything in memory
+type Store struct {
+	mu      sync.RWMutex
+	reviews []*ghreviews.Review
+}
+
+// NewStore constructs an in-memory store
+func NewStore() *Store {
+	return &Store{}
+}
+
+var id uint64 = 0
+
+func getNextID() string {
+	return strconv.FormatUint(atomic.AddUint64(&id, 1), 10)
+}
+
+// CreateReview inserts a review on the reviews array
+func (s *Store) CreateReview(username, avatarUrl, content string) (*ghreviews.Review, error) {
+	r := &ghreviews.Review{
+		ID:        getNextID(),
+		Username:  username,
+		AvatarURL: avatarUrl,
+		Content:   content,
+		CreatedAt: toMilliseconds(time.Now()),
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// add to the beginning
+	s.reviews = append([]*ghreviews.Review{r}, s.reviews...)
+
+	return r, nil
+}
+
+// GetMostRecentReviews returns N most recent reviews
+func (s *Store) GetMostRecentReviews(limit int) ([]*ghreviews.Review, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	last := min(limit, len(s.reviews))
+	rr := s.reviews[:last]
+	return rr, nil
+}
+
+// GetMostRecentReviewsByUsername returns N most recent reviews for a given user
+func (s *Store) GetMostRecentReviewsByUsername(username string) ([]*ghreviews.Review, error) {
+	rr := []*ghreviews.Review{}
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, r := range s.reviews {
+		if r.Username == username {
+			rr = append(rr, r)
+		}
+	}
+
+	return rr, nil
+}
+
+// CountReviews returns total amount of reviews for a given user
+func (s *Store) CountReviews() (int, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	return len(s.reviews), nil
+}
+
+// CountReviewsByUsername returns N most recent reviews for a given user
+func (s *Store) CountReviewsByUsername(username string) (int, error) {
+	count := 0
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	for _, r := range s.reviews {
+		if r.Username == username {
+			count++
+		}
+	}
+
+	return count, nil
+}
+
+func toMilliseconds(t time.Time) int64 {
+	return t.UnixNano() / int64(time.Millisecond)
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+
+	return b
+}
 
 ```
-.
-├── Makefile
-├── cmd
-│   └── server
-│       └── server.go
-├── database
-│   └── store.go
-├── docker-compose.yml
-├── go.mod
-├── go.sum
-├── gqlgen.yml
-├── pkg
-│   ├── graph
-│   │   ├── exec.go
-│   │   ├── model.go
-│   │   ├── resolver.go
-│   │   ├── schema.graphql
-│   │   └── server.go
-│   └── service
-│       └── review.go
-└── ghreviews.go
 
+### gqlgen
+
+Configuramos gqlgen para guardar el código generado dentro del paquete
+`pkg/graph/generated` y con la opción `autobind` evitamos generar `structs` que ya estén
+definidas dentro de nuestro paquete `ghreviews`, como la estructura `Reviews`.
+
+```yaml
+# gqlgen.yml
+# Refer to https://gqlgen.com/config/
+# for detailed .gqlgen.yml documentation.
+
+schema:
+  - pkg/graph/*.graphql
+exec:
+  filename: pkg/graph/generated/exec.go
+  package: generated
+model:
+  filename: pkg/graph/generated/model.go
+  package: generated
+resolver:
+  filename: pkg/graph/resolver.go
+  type: Resolver
+autobind:
+  - github.com/sebastianvera/ghreviews
 ```
 
-> [Acá](https://github.com/golang-standards/project-layout) se explica el
-> estándar ocupado para ésta estructura de directorios
-
-##### Generación de código con gqlgen
+#### Suscripciones
 
 A partir de este schema graphql:
 
 ```graphql
 type Subscription {
-  feed: GhReviewsEvent!
+  feed: NewReviewEvent!
 }
 ```
 
-[gqlgen] va a generar esta interfaz:
+[gqlgen] genera esta interfaz:
 
 ```go
 type SubscriptionResolver interface {
-	Feed(ctx context.Context) (<-chan *GhReviewsEvent, error)
+	Feed(ctx context.Context) (<-chan *NewReviewEvent, error)
 }
 ```
 
 > El comando para generar el código lo puedes ver el archivo [Makefile]
 
-La parte importante es el _channel_ de retorno, lo debemos
-guardar si queremos enviar datos al cliente. El parámetro `ctx` nos permitirá
-saber cuándo el cliente se ha desconectado por medio de la función `ctx.Done()`.
+La parte importante es el _channel_ de retorno, debemos persistir este canal
+para posteriormente enviar datos al cliente, como por ejemplo, hacer un [broadcast].
+El parámetro `ctx` nos permitirá saber cuándo el cliente se ha desconectado.
 
-Si queremos enviar un mensaje _broadcast_ a todos los clientes contectados,
-necesitamos tener en algún lado todos los channels (conexiones) que son retornados por ésta función.
-Esto se puede lograr de formar rápida con un mapa y guardar todos éstos
-canales, dónde la llave sea un `chan *GhReviewsEvent`, de esta manera si
-queremos borrar un canal del mapa cuando un usuario se desconecta, solamente
-tenemos que llamar a `delete(mapa, llave)`.
+Crearemos una estructura llamada `hub` para administrar y almacenar los `channels` de todos
+los clientes conectados:
 
 ```go
-// resolver.go
+// pkg/graph/hub.go
+package graph
+
+import "sync"
+
+type hub struct {
+	mu       sync.RWMutex
+	channels map[chan *NewReviewEvent]bool
+}
+
+func NewHub() *hub {
+	return &hub{
+		channels: make(map[chan *NewReviewEvent]bool),
+	}
+}
+
+func (h *hub) Add(channel chan *NewReviewEvent) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	h.channels[channel] = true
+}
+
+func (h *hub) Remove(channel chan *NewReviewEvent) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	delete(h.channels, channel)
+}
+
+func (h *hub) Size() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	return len(h.channels)
+}
+
+func (h *hub) BroadcastNewReviewEvent(event *NewReviewEvent) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	for channel := range h.channels {
+		channel <- event
+	}
+}
+```
+
+La gracia de ésta estructura es que utiliza un [reader/writer
+mutex](https://golang.org/pkg/sync/#RWMutex) para manejar el acceso concurrente
+al mapa que contiene los canales, esto es necesario dado que los mapas en go [no
+permiten lectura durante una
+escritura](https://stackoverflow.com/questions/36167200/how-safe-are-golang-maps-for-concurrent-read-write-operations).
+Ahora podemos hacer uso de esta estructura para guardar nuestro clientes cada
+vez que un cliente se suscribe a `feed`, veamos la implementación de nuestro
+resolver:
+
+```go
+// pkg/graph/resolver.go
 package graph
 
 import (
 	"context"
-	"sync"
 
-	"github.com/mtavano/ghreviews"
+	"github.com/sebastianvera/ghreviews"
+	"github.com/sirupsen/logrus"
 )
 
 type Resolver struct {
 	reviewService ghreviews.ReviewService
-	publicHubMU sync.RWMutex // debemos proteger lecturas y escrituras concurrentes en mapas en go
-	publicHub   map[chan *GhReviewsEvent]bool
+	logger        *logrus.Logger
+	hub           *hub
 }
 
 func NewResolver(logger *logrus.Logger, reviewService ghreviews.ReviewService) *Resolver {
 	return &Resolver{
 		reviewService: reviewService,
-		publicHub:     make(map[chan *GhReviewsEvent]bool),
+		logger:        logger,
+		hub:           NewHub(),
 	}
 }
+
+func (r *subscriptionResolver) Feed(ctx context.Context) (<-chan *NewReviewEvent, error) {
+	cr := make(chan *NewReviewEvent, 1)
+	r.hub.Add(cr)
+
+	r.logger.Debugf("[connected]: %d users\n", r.hub.Size())
+	go func() {
+		<-ctx.Done()
+		r.hub.Remove(cr)
+		r.logger.Debugf("[disconnected]: %d users\n", r.hub.Size())
+	}()
+
+	return cr, nil
+}
+
+func (r *queryResolver) GetMostRecentReviews(ctx context.Context, limit *int) ([]*ghreviews.Review, error) {
+	l := 10
+	if limit != nil {
+		l = *limit
+	}
+	return r.reviewService.GetMostRecentReviews(l)
+}
+
+func (r *queryResolver) GetReviewsByUsername(ctx context.Context, username string) ([]*ghreviews.Review, error) {
+	return r.reviewService.GetMostRecentReviewsByUsername(username)
+}
+
+func (r *queryResolver) CountReviewsByUsername(ctx context.Context, username string) (int, error) {
+	return r.reviewService.CountReviewsByUsername(username)
+}
+
+func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
+func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
+
+type mutationResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }
+type subscriptionResolver struct{ *Resolver }
 ```
 
-Idealmente podríamos ocupar un `Set` en vez de un mapa, pero golang no tiene
-`Set` aún (generics ftw), por comodidad ocuparemos un `map` de `chan` y `bool`,
-pero no utilizaremos el valor, sólo nos interesan sus llaves.
-
-Ya con esto resuelto, podemos implementar nuestra función `Feed` para
-satisfacer la interfaz `SubscriptionResolver` generada por gqlgen:
-
-La función `Feed` se va a ejecutar la primera vez que el cliente se conecte
-(inicio de la suscripción) y su **principal objetivo** es retornar el `chan` por
-el cual gqlgen enviará data al cliente. Esto quiere decir que, si queremos
-enviar datos desde otras funciones/_handlers_, debemos preocuparnos de
-guardar este canal y de borrarlo cuando el cliente se desconecte.
+La función `Feed` agrega y remueve clientes de `hub` pero aún nuestro `resolver`
+no envía mensajes a los clientes. Nuestro objetivo es enviar mensajes cada vez
+que un review sea creado, por lo que podemos actualizar nuestra mutación
+`CreateReview` y emitir un evento a todos los clientes por medio de la función
+`BroadcastNewReviewEvent` definida en `hub`:
 
 ```go
-// resolver.go
-package graph
-
-func (r *subscriptionResolver) Feed(ctx context.Context) (<-chan *GhReviewsEvent, error) {
-	// Obtener 20 reviews más recientes
-	rr, err := r.reviewService.GetLastReviews()
+// pkg/graph/resolver.go
+func (r *mutationResolver) CreateReview(ctx context.Context, reviewInput CreateReviewInput) (*ghreviews.Review, error) {
+	review, err := r.reviewService.CreateReview(
+		reviewInput.Username,
+		reviewInput.AvatarURL,
+		reviewInput.Content,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	// Obtener total de reviews
 	total, err := r.reviewService.CountReviews()
 	if err != nil {
 		return nil, err
 	}
 
-	// Crear channel que manejará gqlgen para enviarle información al cliente
-	cr := make(chan *GhReviewsEvent, 1)
-
-	// Guardar channel en nuestro resolver para poder enviar mensajes en el futuro
-	// Proteger escritura del map
-	r.publicHubMU.Lock()
-	r.publicHub[cr] = true
-	r.publicHubMU.Unlock()
-
+  // Utilizamos una goroutine para no bloquear la ejecución de esta función
 	go func() {
-		// ctx.Done() retorna cuando el canal se cierra, ergo, el cliente se desconecta
-		<-ctx.Done()
-
-		// Proteger escritura del map
-		r.publicHubMU.Lock()
-		// Borrar channel de nuestro resolver, ya no es necesario guardarlo dado que el cliente se desconectó
-		delete(r.publicHub, cr)
-		r.publicHubMU.Unlock()
+		msg := &NewReviewEvent{Total: total, NewReview: review}
+		r.hub.BroadcastNewReviewEvent(msg)
 	}()
-
-	// Enviar un evento al cliente
-	// Este es un mensaje inicial, en dónde enviamos el total de reviews y los 20 reviews más recientes
-	cr <- &GhReviewsEvent{Total: total, NewReviews: rr}
-
-	return cr, nil
-}
-
-
-func (r *Resolver) Subscription() SubscriptionResolver { return &subscriptionResolver{r} }
-
-type subscriptionResolver struct{ *Resolver }
-```
-
-Ahora podemos ocupar el mapa de conexiones dentro de la mutación
-`CreateReview` y enviarle un mensaje a todos los clientes conectados
-
-**Antes**
-
-```go
-// resolver.go
-package graph
-
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
-
-type mutationResolver struct{ *Resolver }
-
-func (r *mutationResolver) CreateReview(ctx context.Context, reviewInput ghreviews.CreateReviewInput) (*ghreviews.GhReview, error) {
-	review, err := r.reviewService.CreateReview(
-		reviewInput.GithubUsername,
-		reviewInput.GithubAvatarURL,
-		reviewInput.Content,
-	)
-	if err != nil {
-		return nil, err
-	}
 
 	return review, nil
 }
 ```
 
-Ahora, una vez que ya creamos el review, obtendremos el nuevo total y luego
-enviaremos un mensaje a todos los channels/llaves del mapa `publicHub`:
+### Servidor
+
+Crearemos una función que nos devolverá un servidor graphql configurado:
 
 ```go
-// resolver.go
+// pkg/graph/server.go
 package graph
 
-func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
+import (
+	"net/http"
+	"time"
 
-type mutationResolver struct{ *Resolver }
+	"github.com/99designs/gqlgen/graphql/handler"
+	"github.com/99designs/gqlgen/graphql/handler/extension"
+	"github.com/99designs/gqlgen/graphql/handler/lru"
+	"github.com/99designs/gqlgen/graphql/handler/transport"
+	"github.com/gorilla/websocket"
+	"github.com/sebastianvera/ghreviews/pkg/graph/generated"
+)
 
-func (r *mutationResolver) CreateReview(ctx context.Context, reviewInput ghreviews.CreateReviewInput) (*ghreviews.GhReview, error) {
-	review, err := r.reviewService.CreateReview(
-		reviewInput.GithubUsername,
-		reviewInput.GithubAvatarURL,
-		reviewInput.Content,
-	)
-	if err != nil {
-		return nil, err
+func NewServer(r *Resolver, isProduction bool) *handler.Server {
+	srv := handler.New(generated.NewExecutableSchema(generated.Config{Resolvers: r}))
+
+	srv.AddTransport(transport.Websocket{
+		KeepAlivePingInterval: 5 * time.Second,
+		Upgrader: websocket.Upgrader{
+			ReadBufferSize:  1024,
+			WriteBufferSize: 1024,
+			CheckOrigin: func(r *http.Request) bool {
+				return true
+			},
+		},
+	})
+	srv.AddTransport(transport.Options{})
+	srv.AddTransport(transport.GET{})
+	srv.AddTransport(transport.POST{})
+	srv.AddTransport(transport.MultipartForm{})
+
+	srv.SetQueryCache(lru.New(1000))
+
+	if !isProduction {
+		srv.Use(extension.Introspection{})
+	}
+	srv.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New(100),
+	})
+
+	return srv
+}
+```
+
+¿Por qué no podemos ocupar el servidor con una configuración por defecto
+([handler.NewDefaultServer](https://github.com/99designs/gqlgen/blob/master/graphql/handler/server.go#L31))?
+Basicamente necesitamos modificar la función `CheckOrigin` o no podremos acceder
+por medio websockets a nuestra API desde un origen distinto al de nuestro
+servidor.
+
+Ya tenemos todo listo para correr nuestra aplicación, solo falta crear un
+archivo `cmd/server/server.go`, donde instanciemos nuestro datastore, logger y
+levantemos un servidor http con nuestro servidor graphql:
+
+```go
+// cmd/server/server.go
+package main
+
+import (
+	"context"
+	"flag"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
+	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/rs/cors"
+	"github.com/sirupsen/logrus"
+
+	"github.com/sebastianvera/ghreviews/pkg/database"
+	"github.com/sebastianvera/ghreviews/pkg/graph"
+)
+
+var (
+	listenAddr string
+	env        string
+)
+
+func main() {
+	parseFlags()
+
+	logger := logrus.New()
+
+	store := database.NewStore()
+
+	isProduction := env == "production"
+	if !isProduction {
+		logger.SetLevel(logrus.DebugLevel)
 	}
 
-	// --- Nuevo código
-	// Obtener nuevo total
-	total, err := r.reviewService.CountReviews(reviewInput.GithubUsername)
-	if err != nil {
-		return nil, err
+	r := graph.NewResolver(logger, store)
+	graphqlServer := graph.NewServer(r, isProduction)
+
+	router := http.NewServeMux()
+	router.Handle("/query", graphqlServer)
+	if env != "production" {
+		router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	}
 
-	// Enviamos los mensajes en una goroutine para no bloquear la ejecución de la función actual
+	logger.Printf("connect to http://%s/ for GraphQL playground", listenAddr)
+	done := make(chan bool)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+
+	w := logger.Writer()
+	defer w.Close()
+	server := &http.Server{
+		Addr:         listenAddr,
+		Handler:      cors.AllowAll().Handler(router),
+		ErrorLog:     log.New(w, "", 0),
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+
 	go func() {
-		msg := &GhReviewsEvent{Total: total, NewReviews: []*ghreviews.GhReview{review}}
-		// Proteger lectura del mapa
-		r.publicHubMU.RLock()
-		defer r.publicHubMU.RUnlock()
+		<-quit
+		logger.Println("Server is shutting down...")
 
-		// Enviamos `msg` a cada channel guardado en `publicHub`
-		for channel := range r.publicHub {
-			channel <- msg
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		server.SetKeepAlivesEnabled(false)
+		if err := server.Shutdown(ctx); err != nil {
+			logger.Fatalf("Could not gracefully shutdown the server: %v\n", err)
 		}
+		close(done)
 	}()
 
-	return review, nil
+	logger.Info("Server is ready to handle requests at ", listenAddr)
+	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		logger.Fatalf("Could not listen on %s: %v\n", listenAddr, err)
+	}
+
+	<-done
+	logger.Info("Server stopped")
+}
+
+func parseFlags() {
+	flag.StringVar(&listenAddr, "listen-addr", "localhost:8080", "server listen address")
+	flag.StringVar(&env, "env", "development", "application environment (development, production)")
+	flag.Parse()
 }
 ```
 
----
+Para levantar la aplicación solo necesitamos correr `make`, este comando llamará a
+`gqlgen`, generará código a partir de nuestro schema y nuestra configuración,
+luego compilará y correrá nuestro `cmd/server/server.go`, si no hay errores
+deberiamos poder ver la aplicación corriendo en el puerto `:8080`. Para
+confirmar que todo está funcionando como debe, podemos utilizar el playground 
+accediendo a http://localhost:8080 y verificar si nuestros queries, mutaciones y
+suscripciones funcionan como deben.
 
-La idea principal del post fue utilizar subscripciones de graphql con [apollo] y
-[gqlgen], espero que te sea de ayuda y si es necesario podriamos escribir una
-parte dos o entrar más en detalle ya sea en el frontend o el backend.
+-----
 
----
+Espero este post te sea de ayuda, cuéntame si hay algo más que te interesaría
+saber o quizás sobre algo que me faltó cubrir en este post.
 
-El código de [codesandbox] y [github] trae unos extras tales como
-suscripciones por usuario, uso de migraciones, algunos tests y logging.
+En la segunda parte de este post exploraremos cómo consumir esta API con
+[apollo].
+
+- [Codigo de la aplicación](https://github.com/sebastianvera/ghreviews)
+
+¡Gracias y hasta la próxima!
 
 [gqlgen]: https://github.com/99designs/gqlgen
 [apollo]: https://www.apollographql.com/
-[mtavano]: https://github.com/mtavano
 [suscripciones graphql]: https://www.apollographql.com/docs/react/data/subscriptions/
 [suscripciones]: https://www.howtographql.com/graphql-js/7-subscriptions
 [graphql]: https://graphql.org/
 [hook]: https://es.reactjs.org/docs/hooks-intro.html
 [codesandbox]: https://codesandbox.io/s/ghreviews-hu1j9
-[github]: https://github.com/mtavano/ghreviews
-[makefile]: https://github.com/mtavano/ghreviews/blob/master/Makefile#L12
+[github]: https://github.com/sebastianvera/ghreviews
+[makefile]: https://github.com/sebastianvera/ghreviews/blob/master/Makefile#L12
+[broadcast]: http://huribroadcast.com/que-es-broadcast/
