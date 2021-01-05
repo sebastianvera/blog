@@ -3,7 +3,7 @@ module.exports = {
     title: `Sebastián Vera`,
     author: {
       name: `Sebastián Vera`,
-      summary: `Software Developer actualmente viviendo en Berlin y trabajando en `,
+      summary: `Software Developer actualmente viviendo en Berlin`,
     },
     description: `Personal blog by Sebastian Vera.`,
     siteUrl: `https://blog.apipath.io`,
