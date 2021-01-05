@@ -27,7 +27,7 @@ Quizás éstos links puedan ser de ayuda:
 
 # Parte 1: Servidor
 
-## ¿Qué son las suscripciones graphql?
+## ¿Qué son las suscripciones GraphQL?
 
 _"Las [suscripciones] son una característica de [GraphQL] que permite a un
 servidor enviar datos a sus clientes cuando ocurre un evento específico. Las
@@ -57,7 +57,7 @@ github de manera anónima. La aplicación no necesita registrar usuarios y el
 
 Por simplicidad no tocaremos temas como bases de datos, migraciones, testing,
 tracing, métricas, etc. solo nos centraremos en cómo utilizar suscripciones
-graphql.
+GraphQL.
 
 ### Estructura de directorios
 
@@ -306,7 +306,7 @@ autobind:
 
 #### Suscripciones
 
-A partir de este schema graphql:
+A partir de este schema GraphQL:
 
 ```graphql
 type Subscription {
@@ -487,7 +487,7 @@ func (r *mutationResolver) CreateReview(ctx context.Context, reviewInput CreateR
 
 ### Servidor
 
-Crearemos una función que nos devolverá un servidor graphql configurado:
+Crearemos una función que nos devolverá un servidor GraphQL configurado:
 
 ```go
 // pkg/graph/server.go
@@ -542,7 +542,7 @@ func NewServer(r *Resolver, isProduction bool) *handler.Server {
 
 Ya tenemos todo listo para correr nuestra aplicación, solo falta crear un
 archivo `cmd/server/server.go`, donde instanciemos nuestro datastore, logger y
-levantemos un servidor http con nuestro servidor graphql:
+levantemos un servidor http con nuestro servidor GraphQL:
 
 ```go
 // cmd/server/server.go
