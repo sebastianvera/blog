@@ -39,7 +39,7 @@ const Bio = () => {
     }
   `)
 
-  const { author, work } = data.site.siteMetadata
+  const { author } = data.site.siteMetadata
   return (
     <div
       style={{
@@ -60,16 +60,7 @@ const Bio = () => {
           borderRadius: `50%`,
         }}
       />
-      <p>
-        {author.summary}
-        {/* <a */}
-        {/*   target="_blank" */}
-        {/*   rel="noopener noreferrer" */}
-        {/*   href={`https://twitter.com/${work.twitter}`} */}
-        {/* > */}
-        {/*   @{work.companyName} */}
-        {/* </a> */}
-      </p>
+      <p>{author.summary}</p>
     </div>
   )
 }
