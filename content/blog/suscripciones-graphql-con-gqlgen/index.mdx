@@ -86,11 +86,11 @@ GraphQL.
 ```
 
 > [Acá](https://github.com/golang-standards/project-layout) se explica el
-> estándar ocupado para ésta estructura de directorios
+> estándar ocupado para esta estructura de directorios
 
 ### GraphQL
 
-Para ésta aplicación tendremos el siguiente schema:
+Para esta aplicación tendremos el siguiente schema:
 
 ```graphql
 # pkg/graph/schema.graphql
@@ -379,7 +379,7 @@ func (h *hub) BroadcastNewReviewEvent(event *NewReviewEvent) {
 }
 ```
 
-La gracia de ésta estructura es que utiliza un [reader/writer
+La gracia de esta estructura es que utiliza un [reader/writer
 mutex](https://golang.org/pkg/sync/#RWMutex) para manejar el acceso concurrente
 al `map` que contiene los canales, esto es necesario dado que los `map` en go
 [no permiten lectura durante una
