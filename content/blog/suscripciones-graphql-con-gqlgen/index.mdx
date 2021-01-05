@@ -1,5 +1,5 @@
 ---
-title: Suscripciones GraphQL con gqlgen Parte 1 [backend]
+title: Suscripciones GraphQL con gqlgen Parte 1 [Servidor]
 date: "2021-01-02T23:28:00.000Z"
 description: "¿No sabes cómo implementar suscripciones de GraphQL en Golang? Este post explica cómo crear una aplicación
 con gqlgen y utilizar suscripciones GraphQL"
@@ -11,23 +11,27 @@ import landing from "./landing.png"
 import reviews from "./reviews.png"
 import gif from './ghreviews.gif'
 
-A la fecha, no hay tutoriales sobre cómo manejar suscripciones de graphql con
-[gqlgen], por lo que quiero compartir, en un tutorial de dos partes, cómo
-utilizar [ésta librería](https://github.com/99designs/gqlgen) en el backend,
-apollo en el frontend y desarrollar una simple aplicación.
+A la fecha, no hay tutoriales sobre cómo manejar suscripciones de GraphQL con
+[gqlgen], por lo que quiero compartir en un tutorial de dos partes cómo
+construir una simple aplicación. En la primera parte construiremos un servidor
+GraphQL con Go y [gqlgen], y en la segunda parte veremos cómo utilizar [react] y [apollo]
+para consumir nuestra recién creada API GraphQL.
 
 > En este post se asume que tienes un conocimiento básico de GraphQL y/o sabes
 > cómo escribir escribir _"queries"_ y _"mutations"_.
 
-- [Queries and mutations](https://graphql.org/learn/queries/)
+Quizás éstos links puedan ser de ayuda:
 
-# Parte 1: Backend
+- [Queries and mutations](https://graphql.org/learn/queries/)
+- [Introducción a GraphQL](https://ed.team/blog/introduccion-graphql)
+
+# Parte 1: Servidor
 
 ## ¿Qué son las suscripciones graphql?
 
 _"Las [suscripciones] son una característica de [GraphQL] que permite a un
 servidor enviar datos a sus clientes cuando ocurre un evento específico. Las
-suscripciones se implementan normalmente con WebSockets. En esa configuración,
+suscripciones se implementan normalmente con [WebSockets]. En esa configuración,
 el servidor mantiene una conexión constante con su cliente suscrito. Esto
 también rompe el "Ciclo de solicitud-respuesta"(Request-Response-Cycle) que se
 utilizaba para todas las interacciones anteriores con la API._
@@ -38,7 +42,7 @@ interesado. Cada vez que se produce este evento en particular, el servidor
 utiliza la conexión para enviar los datos del evento al cliente o clientes
 suscritos."_
 
-> Literalmente traducido desde: https://www.howtographql.com/graphql-js/7-subscriptions/
+> Traducido literalmente desde: https://www.howtographql.com/graphql-js/7-subscriptions/
 
 
 ## Aplicación a desarrollar
@@ -377,9 +381,9 @@ func (h *hub) BroadcastNewReviewEvent(event *NewReviewEvent) {
 
 La gracia de ésta estructura es que utiliza un [reader/writer
 mutex](https://golang.org/pkg/sync/#RWMutex) para manejar el acceso concurrente
-al mapa que contiene los canales, esto es necesario dado que los mapas en go [no
-permiten lectura durante una
-escritura](https://stackoverflow.com/questions/36167200/how-safe-are-golang-maps-for-concurrent-read-write-operations).
+al `map` que contiene los canales, esto es necesario dado que los `map` en go
+[no permiten lectura durante una
+escritura](https://golang.org/doc/faq#atomic_maps).
 Ahora podemos hacer uso de esta estructura para guardar nuestro clientes cada
 vez que un cliente se suscribe a `feed`, veamos la implementación de nuestro
 resolver:
@@ -532,11 +536,8 @@ func NewServer(r *Resolver, isProduction bool) *handler.Server {
 }
 ```
 
-¿Por qué no podemos ocupar el servidor con una configuración por defecto
-([handler.NewDefaultServer](https://github.com/99designs/gqlgen/blob/master/graphql/handler/server.go#L31))?
-Basicamente necesitamos modificar la función `CheckOrigin` o no podremos acceder
-por medio websockets a nuestra API desde un origen distinto al de nuestro
-servidor.
+> Recuerden actualizar el contenido de `CheckOrigin` y sólo permitir origenes
+> conocidos
 
 Ya tenemos todo listo para correr nuestra aplicación, solo falta crear un
 archivo `cmd/server/server.go`, donde instanciemos nuestro datastore, logger y
@@ -667,8 +668,10 @@ Te dejo un preview de lo que construiremos en la parte dos de este post:
 [suscripciones graphql]: https://www.apollographql.com/docs/react/data/subscriptions/
 [suscripciones]: https://www.howtographql.com/graphql-js/7-subscriptions
 [graphql]: https://graphql.org/
+[react]: https://es.reactjs.org
 [hook]: https://es.reactjs.org/docs/hooks-intro.html
 [codesandbox]: https://codesandbox.io/s/ghreviews-hu1j9
 [github]: https://github.com/sebastianvera/ghreviews
 [makefile]: https://github.com/sebastianvera/ghreviews/blob/master/Makefile#L12
 [broadcast]: http://huribroadcast.com/que-es-broadcast/
+[websockets]: https://youtu.be/QqMLSspb0ls
