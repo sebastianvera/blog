@@ -1,6 +1,7 @@
 import React from "react"
 import { Link, graphql } from "gatsby"
 import { MDXRenderer } from "gatsby-plugin-mdx"
+import { Disqus } from "gatsby-plugin-disqus"
 
 import Bio from "../components/bio"
 import Layout from "../components/layout"
@@ -9,8 +10,13 @@ import { rhythm, scale } from "../utils/typography"
 
 const BlogPostTemplate = ({ data, pageContext, location }) => {
   const post = data.mdx
-  const siteTitle = data.site.siteMetadata.title
+  const { title: siteTitle, siteUrl } = data.site.siteMetadata
   const { previous, next } = pageContext
+  const disqusConfig = {
+    url: `${siteUrl + location.pathname}`,
+    identifier: post.frontmatter.id,
+    title: post.frontmatter.title,
+  }
 
   return (
     <Layout location={location} title={siteTitle}>
@@ -46,6 +52,7 @@ const BlogPostTemplate = ({ data, pageContext, location }) => {
         />
         <footer>
           <Bio />
+          <Disqus config={disqusConfig} />
         </footer>
       </article>
 
@@ -86,15 +93,16 @@ export const pageQuery = graphql`
     site {
       siteMetadata {
         title
+        siteUrl
       }
     }
     mdx(fields: { slug: { eq: $slug } }) {
-      id
       excerpt(pruneLength: 160)
       body
       frontmatter {
+        id
         title
-        date(formatString: "MMMM DD, YYYY")
+        date(formatString: "MMMM DD, YYYY", locale: "es")
         description
       }
     }

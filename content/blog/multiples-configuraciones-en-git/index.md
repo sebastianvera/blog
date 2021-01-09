@@ -1,4 +1,5 @@
 ---
+id: git-config
 title: Manejando múltiples configuraciones de git
 date: "2020-04-24T20:56:00.000Z"
 description: "¿Cómo puedo manejar distintas configuraciones de git dependiendo

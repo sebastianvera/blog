@@ -102,6 +102,12 @@ module.exports = {
         icon: `content/assets/logo.png`,
       },
     },
+    {
+      resolve: `gatsby-plugin-disqus`,
+      options: {
+        shortname: `blog-3y5wvj57rp`,
+      },
+    },
     `gatsby-plugin-react-helmet`,
     {
       resolve: `gatsby-plugin-typography`,

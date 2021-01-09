@@ -1,4 +1,5 @@
 ---
+id: "building-ppoker"
 title: Construyendo ppoker, una app para estimar tareas
 date: "2020-12-13T14:28:00.000Z"
 description: "¿No sabes cómo utilizar subscripciones de GraphQL en Golang? Este post explica cómo construí la aplicación ppoker.react.io con
